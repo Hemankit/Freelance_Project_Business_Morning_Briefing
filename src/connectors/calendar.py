@@ -23,8 +23,9 @@ def ensure_credential_files():
         with open(TOKEN_PATH, 'w') as f:
             f.write(os.getenv('GOOGLE_TOKEN_JSON'))
 
-            
+
 def get_calendar_service():
+    ensure_credential_files()
     creds = None
 
     # token.json stores your login after the first successful auth,
