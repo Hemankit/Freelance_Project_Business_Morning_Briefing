@@ -8,6 +8,22 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 CREDENTIALS_PATH = 'credentials/credentials.json'  # the JSON downloaded
 TOKEN_PATH = 'credentials/token.json'  # this gets auto-created after first login
 
+import json
+
+def ensure_credential_files():
+    """On GitHub Actions, credentials/token don't exist as files yet — 
+    write them from environment variables if they're missing."""
+    os.makedirs('credentials', exist_ok=True)
+
+    if not os.path.exists(CREDENTIALS_PATH) and os.getenv('GOOGLE_CREDENTIALS_JSON'):
+        with open(CREDENTIALS_PATH, 'w') as f:
+            f.write(os.getenv('GOOGLE_CREDENTIALS_JSON'))
+
+    if not os.path.exists(TOKEN_PATH) and os.getenv('GOOGLE_TOKEN_JSON'):
+        with open(TOKEN_PATH, 'w') as f:
+            f.write(os.getenv('GOOGLE_TOKEN_JSON'))
+
+            
 def get_calendar_service():
     creds = None
 
