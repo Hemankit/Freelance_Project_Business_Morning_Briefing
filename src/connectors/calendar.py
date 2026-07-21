@@ -38,6 +38,11 @@ def get_calendar_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            if os.getenv('CI'):
+                raise RuntimeError(
+                    "No valid Google token found in CI. "
+                    "Ensure GOOGLE_TOKEN_JSON secret is set and contains a refresh_token."
+                )
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
             creds = flow.run_local_server(port=0)
 

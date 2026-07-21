@@ -32,7 +32,8 @@ def run():
 
     print("\nSending email...")
     result = send_briefing_email(RECIPIENT_EMAIL, briefing_text)
-    print(f"Sent! Email ID: {result['id']}")
+    email_id = result.id if hasattr(result, 'id') else result.get('id', result)
+    print(f"Sent! Email ID: {email_id}")
 
 
 if __name__ == '__main__':
