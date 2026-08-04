@@ -10,9 +10,9 @@ from fastapi import HTTPException
 from src.repositories.oauth_state_repository import OAuthStateInvalidError
 
 
-STRIPE_CLIENT_ID = os.environ["STRIPE_CLIENT_ID"]
-STRIPE_SECRET_KEY = os.environ["STRIPE_SECRET_KEY"]
-STRIPE_REDIRECT_URI = os.environ["STRIPE_REDIRECT_URI"]
+STRIPE_CLIENT_ID = os.environ["STRIPE_CLIENT_ID"].strip()
+STRIPE_SECRET_KEY = os.environ["STRIPE_SECRET_KEY"].strip()
+STRIPE_REDIRECT_URI = os.environ["STRIPE_REDIRECT_URI"].strip()
 
 STRIPE_AUTHORIZE_URL = "https://connect.stripe.com/oauth/authorize"
 
