@@ -1,7 +1,11 @@
-def apply_rules(events):
+def apply_rules(events, *, client_id=None):
     """
     v1: no filtering — just merges and sorts by urgency.
     add real filtering/deduping based on real output across both sources.
+
+    client_id lets callers hardcode per-client branches here (a stopgap
+    until rules_json-driven filtering exists) without changing every
+    other client's behavior.
     """
     urgency_order = {"high": 0, "medium": 1, "info": 2, "low": 3}
 

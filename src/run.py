@@ -112,7 +112,9 @@ def run_for_client(client_id: str) -> BriefingRun:
     stripe_event_count = len(stripe_events)
 
     try:
-        final_events = apply_rules(calendar_events + stripe_events)
+        final_events = apply_rules(
+            calendar_events + stripe_events, client_id=client_id
+        )
     except Exception as exc:
         return fail(
             "apply_rules",
