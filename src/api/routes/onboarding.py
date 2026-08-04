@@ -89,13 +89,17 @@ def setup_page(request: Request, setup_token: str):
     )
 
 
+# POC defaults for fields not yet exposed on the setup form: a single global
+# cron time is used for all clients (see BRIEFING_RUN_HOUR/MINUTE_UTC in app.py).
+_DEFAULT_TIMEZONE = "UTC"
+_DEFAULT_DELIVERY_TIME = "11:00"
+_DEFAULT_LOOKBACK_HOURS = 24
+
+
 @router.post("/setup/{setup_token}/configuration")
 def save_configuration(
     setup_token: str,
     recipient_email: str = Form(...),
-    timezone: str = Form(...),
-    delivery_time: str = Form(...),
-    lookback_hours: int = Form(...),
     enabled_sources: list[str] = Form([]),
 ):
     if _client_repository.get_client(client_id=setup_token) is None:
@@ -105,9 +109,9 @@ def save_configuration(
         _configuration_repository.save_configuration(
             client_id=setup_token,
             recipient_email=recipient_email,
-            timezone=timezone,
-            delivery_time=delivery_time,
-            lookback_hours=lookback_hours,
+            timezone=_DEFAULT_TIMEZONE,
+            delivery_time=_DEFAULT_DELIVERY_TIME,
+            lookback_hours=_DEFAULT_LOOKBACK_HOURS,
             rules_json={},
             enabled_sources=enabled_sources,
         )

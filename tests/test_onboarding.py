@@ -68,9 +68,6 @@ def test_save_configuration_for_unknown_client_returns_404():
             f"/setup/{token}/configuration",
             data={
                 "recipient_email": "owner@example.com",
-                "timezone": "UTC",
-                "delivery_time": "09:00",
-                "lookback_hours": "24",
                 "enabled_sources": ["google_calendar"],
             },
         )
@@ -88,9 +85,6 @@ def test_save_configuration_rejects_invalid_email():
             f"/setup/{token}/configuration",
             data={
                 "recipient_email": "not-an-email",
-                "timezone": "UTC",
-                "delivery_time": "09:00",
-                "lookback_hours": "24",
                 "enabled_sources": ["google_calendar"],
             },
         )
@@ -108,9 +102,6 @@ def test_full_onboarding_flow_activates_client():
             f"/setup/{token}/configuration",
             data={
                 "recipient_email": "owner@example.com",
-                "timezone": "UTC",
-                "delivery_time": "09:00",
-                "lookback_hours": "24",
                 "enabled_sources": ["google_calendar"],
             },
             follow_redirects=False,
