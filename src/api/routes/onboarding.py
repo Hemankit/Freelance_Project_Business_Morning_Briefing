@@ -148,23 +148,6 @@ def start_google_auth(setup_token: str):
     return RedirectResponse(authorization_url)
 
 
-# TEMP DEBUG: masked view of the env vars this running process actually
-# loaded, to rule out stale/mismatched Railway values. Remove once verified.
-def _mask(value: str) -> str:
-    if len(value) <= 10:
-        return f"len={len(value)}"
-    return f"len={len(value)} {value[:6]}...{value[-4:]}"
-
-
-@router.get("/debug/google-config")
-def debug_google_config():
-    return {
-        "GOOGLE_CLIENT_ID": _mask(google_oauth.GOOGLE_CLIENT_ID),
-        "GOOGLE_CLIENT_SECRET": _mask(google_oauth.GOOGLE_CLIENT_SECRET),
-        "GOOGLE_REDIRECT_URI": google_oauth.GOOGLE_REDIRECT_URI,
-    }
-
-
 @router.get("/auth/google/callback")
 def google_callback(request: Request, state: str):
     """Receive Google's redirect, exchange the code, and store credentials."""
@@ -174,22 +157,12 @@ def google_callback(request: Request, state: str):
     # exchange as an insecure transport.
     authorization_response = str(request.url).replace("http://", "https://", 1)
 
-    # TEMP DEBUG: surface the real exception instead of a bare 500 while
-    # diagnosing the live smoke test. Remove once the flow is verified.
-    try:
-        client_id = google_oauth.handle_oauth_callback(
-            authorization_response=authorization_response,
-            state=state,
-            oauth_state_repository=_oauth_state_repository,
-            integration_repository=_integration_repository,
-        )
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"{type(exc).__name__}: {exc}",
-        ) from exc
+    client_id = google_oauth.handle_oauth_callback(
+        authorization_response=authorization_response,
+        state=state,
+        oauth_state_repository=_oauth_state_repository,
+        integration_repository=_integration_repository,
+    )
     return RedirectResponse(f"/setup/{client_id}")
 
 
