@@ -48,6 +48,7 @@ class OAuthState:
     setup_session_id: str
     expires_at: str
     created_at: str
+    code_verifier: str | None = None
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,19 @@ class OAuthStateRepository:
                     """
                 )
 
+                existing_columns = {
+                    row["name"]
+                    for row in connection.execute(
+                        "PRAGMA table_info(oauth_states)"
+                    ).fetchall()
+                }
+                if "code_verifier" not in existing_columns:
+                    # PKCE verifier for Google's auth code exchange; must
+                    # survive between the auth request and its callback.
+                    connection.execute(
+                        "ALTER TABLE oauth_states ADD COLUMN code_verifier TEXT"
+                    )
+
                 connection.execute(
                     """
                     CREATE INDEX IF NOT EXISTS
@@ -146,6 +160,7 @@ class OAuthStateRepository:
         provider: OAuthProvider,
         setup_session_id: str,
         lifetime: timedelta = timedelta(minutes=10),
+        code_verifier: str | None = None,
     ) -> CreatedOAuthState:
         """
         Create and persist a new OAuth state token.
@@ -183,6 +198,7 @@ class OAuthStateRepository:
             setup_session_id=normalized_session_id,
             expires_at=expires_at.isoformat(),
             created_at=created_at.isoformat(),
+            code_verifier=code_verifier,
         )
 
         try:
@@ -197,9 +213,10 @@ class OAuthStateRepository:
                         provider,
                         setup_session_id,
                         expires_at,
-                        created_at
+                        created_at,
+                        code_verifier
                     )
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         record.state_hash,
@@ -208,6 +225,7 @@ class OAuthStateRepository:
                         record.setup_session_id,
                         record.expires_at,
                         record.created_at,
+                        record.code_verifier,
                     ),
                 )
 
@@ -259,7 +277,8 @@ class OAuthStateRepository:
                     provider,
                     setup_session_id,
                     expires_at,
-                    created_at
+                    created_at,
+                    code_verifier
                 FROM oauth_states
                 WHERE state_hash = ?
                 """,
@@ -448,6 +467,7 @@ class OAuthStateRepository:
             setup_session_id=row["setup_session_id"],
             expires_at=row["expires_at"],
             created_at=row["created_at"],
+            code_verifier=row["code_verifier"],
         )
 
     @staticmethod

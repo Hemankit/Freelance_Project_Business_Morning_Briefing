@@ -1,6 +1,7 @@
 # src/auth/google_oauth.py
 
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import Any
 
@@ -41,16 +42,21 @@ def get_google_client_config() -> dict[str, Any]:
 def create_google_flow(
     *,
     state: str | None = None,
+    code_verifier: str | None = None,
 ) -> Flow:
     """
     Create a web-server OAuth flow.
 
     The same configured redirect URI must be registered in Google Cloud.
+    code_verifier must be the exact PKCE verifier used to build the
+    authorization URL, or Google will reject the token exchange.
     """
     flow = Flow.from_client_config(
         client_config=get_google_client_config(),
         scopes=SCOPES,
         state=state,
+        code_verifier=code_verifier,
+        autogenerate_code_verifier=code_verifier is None,
     )
 
     flow.redirect_uri = GOOGLE_REDIRECT_URI
@@ -66,15 +72,22 @@ def create_authorization_url(
     Create the URL where the client grants Calendar access.
 
     oauth_state_repository persists a hashed, provider-bound state token
-    keyed by client_id.
+    keyed by client_id, along with the PKCE code_verifier so the callback
+    (a separate request) can reuse the exact same one during token exchange.
     """
+    code_verifier = secrets.token_urlsafe(96)
+
     created_state = oauth_state_repository.create_state(
         client_id=client_id,
         provider="google_calendar",
         setup_session_id=client_id,
+        code_verifier=code_verifier,
     )
 
-    flow = create_google_flow(state=created_state.raw_state)
+    flow = create_google_flow(
+        state=created_state.raw_state,
+        code_verifier=code_verifier,
+    )
 
     authorization_url, returned_state = flow.authorization_url(
         access_type="offline",
@@ -115,7 +128,10 @@ def handle_oauth_callback(
 
     client_id = state_record.client_id
 
-    flow = create_google_flow(state=state)
+    flow = create_google_flow(
+        state=state,
+        code_verifier=state_record.code_verifier,
+    )
 
     flow.fetch_token(
         authorization_response=authorization_response,
