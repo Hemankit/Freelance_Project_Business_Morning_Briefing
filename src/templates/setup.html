@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Your Accounts</title>
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+        }
+
+        .setup-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 32px;
+            text-align: center;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        p {
+            margin-bottom: 24px;
+            color: #555;
+        }
+
+        .button {
+            display: block;
+            margin: 12px 0;
+            padding: 14px 20px;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .google-button {
+            background-color: #4285f4;
+        }
+
+        .stripe-button {
+            background-color: #635bff;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+
+        label {
+            display: block;
+            margin: 12px 0 4px;
+            text-align: left;
+            font-size: 14px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="time"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .sources {
+            text-align: left;
+            margin-top: 4px;
+        }
+
+        .connected {
+            color: #2e8b57;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="setup-card">
+        <h1>Complete Your Setup</h1>
+
+        {% if configuration is none %}
+        <p>Tell us how to reach you and which sources to include.</p>
+
+        <form method="post" action="/setup/{{ setup_token }}/configuration">
+            <label for="recipient_email">Recipient email</label>
+            <input type="email" id="recipient_email" name="recipient_email" required>
+
+            <label for="timezone">Timezone (IANA, e.g. America/New_York)</label>
+            <input type="text" id="timezone" name="timezone" required>
+
+            <label for="delivery_time">Delivery time (24h HH:MM)</label>
+            <input type="time" id="delivery_time" name="delivery_time" required>
+
+            <label for="lookback_hours">Lookback hours</label>
+            <input type="number" id="lookback_hours" name="lookback_hours" min="1" required>
+
+            <div class="sources">
+                <label>
+                    <input type="checkbox" name="enabled_sources" value="google_calendar">
+                    Google Calendar
+                </label>
+                <label>
+                    <input type="checkbox" name="enabled_sources" value="stripe">
+                    Stripe
+                </label>
+            </div>
+
+            <button class="button google-button" type="submit">Save preferences</button>
+        </form>
+
+        {% else %}
+        <p>Connect the sources you selected to finish setup.</p>
+
+        {% if "google_calendar" in configuration.enabled_sources %}
+            {% if google_connected %}
+        <p class="connected">&#10003; Google Calendar connected</p>
+            {% else %}
+        <a class="button google-button" href="/auth/google?setup_token={{ setup_token }}">
+            Connect Google Calendar
+        </a>
+            {% endif %}
+        {% endif %}
+
+        {% if "stripe" in configuration.enabled_sources %}
+            {% if stripe_connected %}
+        <p class="connected">&#10003; Stripe connected</p>
+            {% else %}
+        <a class="button stripe-button" href="/auth/stripe?setup_token={{ setup_token }}">
+            Connect Stripe
+        </a>
+            {% endif %}
+        {% endif %}
+        {% endif %}
+    </main>
+</body>
+</html>

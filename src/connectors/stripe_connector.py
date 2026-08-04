@@ -1,31 +1,72 @@
+# src/connectors/stripe_connector.py
+
 import os
+from typing import Any
+
 import stripe
-from dotenv import load_dotenv
-
-load_dotenv()
-
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 
-def get_recent_charges(limit=10):
-    charges = stripe.Charge.list(limit=limit)
-    return charges['data']
+def get_stripe_client() -> stripe.StripeClient:
+    """
+    Create a Stripe client using the platform's secret key.
+
+    This key belongs to the Morning Briefing Stripe platform,
+    not to an individual customer.
+    """
+    secret_key = os.getenv("STRIPE_SECRET_KEY")
+
+    if not secret_key:
+        raise RuntimeError("STRIPE_SECRET_KEY is not configured.")
+
+    return stripe.StripeClient(secret_key)
 
 
-def get_open_invoices(limit=10):
-    invoices = stripe.Invoice.list(status='open', limit=limit)
-    return invoices['data']
+def get_recent_charges(
+    *,
+    stripe_account_id: str,
+    limit: int = 10,
+) -> list[Any]:
+    """
+    Retrieve recent charges belonging to one connected Stripe account.
+    """
+    if not stripe_account_id.startswith("acct_"):
+        raise ValueError("Invalid Stripe connected account ID.")
+
+    client = get_stripe_client()
+
+    response = client.charges.list(
+        params={
+            "limit": limit,
+        },
+        options={
+            "stripe_account": stripe_account_id,
+        },
+    )
+
+    return response.data
 
 
-if __name__ == '__main__':
-    print("--- Recent charges ---")
-    charges = get_recent_charges()
-    for c in charges:
-        c = c.to_dict()
-        print(f"{c['id']} — amount: {c['amount']/100} {c['currency']} — status: {c['status']}")
+def get_open_invoices(
+    *,
+    stripe_account_id: str,
+    limit: int = 10,
+) -> list[Any]:
+    """
+    Retrieve open invoices belonging to one connected Stripe account.
+    """
+    if not stripe_account_id.startswith("acct_"):
+        raise ValueError("Invalid Stripe connected account ID.")
 
-    print("\n--- Open invoices ---")
-    invoices = get_open_invoices()
-    for inv in invoices:
-        inv = inv.to_dict()
-        print(f"{inv['id']} — customer: {inv.get('customer_email')} — amount due: {inv['amount_due']/100}")
+    client = get_stripe_client()
+
+    response = client.invoices.list(
+        params={
+            "status": "open",
+            "limit": limit,
+        },
+        options={
+            "stripe_account": stripe_account_id,
+        },
+    )
+
+    return response.data

@@ -1,7 +1,13 @@
 ﻿anthropic==0.117.0
+apscheduler==3.10.4
+cryptography==43.0.3
+fastapi==0.115.6
 google-api-python-client==2.181.0
 google-auth==2.38.0
 google-auth-oauthlib==1.4.0
+jinja2==3.1.4
 python-dotenv==1.0.1
+python-multipart==0.0.20
 resend==2.34.0
 stripe==15.3.1
+uvicorn[standard]==0.34.0
