@@ -157,12 +157,22 @@ def google_callback(request: Request, state: str):
     # exchange as an insecure transport.
     authorization_response = str(request.url).replace("http://", "https://", 1)
 
-    client_id = google_oauth.handle_oauth_callback(
-        authorization_response=authorization_response,
-        state=state,
-        oauth_state_repository=_oauth_state_repository,
-        integration_repository=_integration_repository,
-    )
+    # TEMP DEBUG: surface the real exception instead of a bare 500 while
+    # diagnosing the live smoke test. Remove once the flow is verified.
+    try:
+        client_id = google_oauth.handle_oauth_callback(
+            authorization_response=authorization_response,
+            state=state,
+            oauth_state_repository=_oauth_state_repository,
+            integration_repository=_integration_repository,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{type(exc).__name__}: {exc}",
+        ) from exc
     return RedirectResponse(f"/setup/{client_id}")
 
 
