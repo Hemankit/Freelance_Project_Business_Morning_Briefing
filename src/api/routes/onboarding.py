@@ -151,12 +151,22 @@ def start_google_auth(setup_token: str):
 @router.get("/auth/google/callback")
 def google_callback(request: Request, state: str):
     """Receive Google's redirect, exchange the code, and store credentials."""
-    client_id = google_oauth.handle_oauth_callback(
-        authorization_response=str(request.url),
-        state=state,
-        oauth_state_repository=_oauth_state_repository,
-        integration_repository=_integration_repository,
-    )
+    # TEMP DEBUG: surface the real exception instead of a bare 500 while
+    # diagnosing the live smoke test. Remove once the flow is verified.
+    try:
+        client_id = google_oauth.handle_oauth_callback(
+            authorization_response=str(request.url),
+            state=state,
+            oauth_state_repository=_oauth_state_repository,
+            integration_repository=_integration_repository,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{type(exc).__name__}: {exc}",
+        ) from exc
     return RedirectResponse(f"/setup/{client_id}")
 
 
