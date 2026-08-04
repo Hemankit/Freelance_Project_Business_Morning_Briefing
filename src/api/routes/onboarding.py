@@ -148,6 +148,23 @@ def start_google_auth(setup_token: str):
     return RedirectResponse(authorization_url)
 
 
+# TEMP DEBUG: masked view of the env vars this running process actually
+# loaded, to rule out stale/mismatched Railway values. Remove once verified.
+def _mask(value: str) -> str:
+    if len(value) <= 10:
+        return f"len={len(value)}"
+    return f"len={len(value)} {value[:6]}...{value[-4:]}"
+
+
+@router.get("/debug/google-config")
+def debug_google_config():
+    return {
+        "GOOGLE_CLIENT_ID": _mask(google_oauth.GOOGLE_CLIENT_ID),
+        "GOOGLE_CLIENT_SECRET": _mask(google_oauth.GOOGLE_CLIENT_SECRET),
+        "GOOGLE_REDIRECT_URI": google_oauth.GOOGLE_REDIRECT_URI,
+    }
+
+
 @router.get("/auth/google/callback")
 def google_callback(request: Request, state: str):
     """Receive Google's redirect, exchange the code, and store credentials."""
