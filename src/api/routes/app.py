@@ -6,10 +6,10 @@ from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 
 from src.api.routes.onboarding import router as onboarding_router
-from src.run import run_all_active_clients, run_for_client
+from src.run import run_all_active_clients
 
 logger = logging.getLogger(__name__)
 
@@ -40,53 +40,3 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Morning Briefing Setup", lifespan=lifespan)
 app.include_router(onboarding_router)
-
-
-# TEMP DEBUG: manually fire the briefing pipeline for one client on demand,
-# to verify fetch/rules/summarize/send without waiting for the daily cron.
-# Remove once verified.
-@app.get("/debug/run-briefing/{client_id}")
-def debug_run_briefing(client_id: str):
-    try:
-        briefing_run = run_for_client(client_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"{type(exc).__name__}: {exc}",
-        ) from exc
-    return briefing_run
-
-
-# TEMP DEBUG: one-off cleanup of a test client's data from production.
-# Remove once used.
-@app.delete("/debug/delete-client/{client_id}")
-def debug_delete_client(client_id: str):
-    from src.repositories.client_repository import ClientRepository
-    from src.repositories.configuration_repository import ConfigurationRepository
-    from src.repositories.integration_repository import IntegrationRepository
-    from src.repositories.oauth_state_repository import OAuthStateRepository
-
-    client_repository = ClientRepository()
-    configuration_repository = ConfigurationRepository()
-    integration_repository = IntegrationRepository()
-    oauth_state_repository = OAuthStateRepository()
-
-    client = client_repository.get_client(client_id=client_id)
-    if client is None:
-        raise HTTPException(status_code=404, detail="No such client.")
-
-    deleted_states = oauth_state_repository.delete_states_for_client(
-        client_id=client_id
-    )
-    integration_repository.delete_google_calendar_connection(client_id=client_id)
-    integration_repository.delete_stripe_connection(client_id=client_id)
-    deleted_configuration = configuration_repository.delete_configuration(
-        client_id=client_id
-    )
-    client_repository.delete_client(client_id=client_id)
-
-    return {
-        "deleted_client": client_id,
-        "pending_oauth_states_removed": deleted_states,
-        "configuration_removed": deleted_configuration,
-    }
