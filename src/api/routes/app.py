@@ -6,10 +6,10 @@ from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from src.api.routes.onboarding import router as onboarding_router
-from src.run import run_all_active_clients
+from src.run import run_all_active_clients, run_for_client
 
 logger = logging.getLogger(__name__)
 
@@ -40,3 +40,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Morning Briefing Setup", lifespan=lifespan)
 app.include_router(onboarding_router)
+
+
+# TEMP DEBUG: manually fire the briefing pipeline for one client on demand,
+# to verify fetch/rules/summarize/send without waiting for the daily cron.
+# Remove once verified.
+@app.get("/debug/run-briefing/{client_id}")
+def debug_run_briefing(client_id: str):
+    try:
+        briefing_run = run_for_client(client_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{type(exc).__name__}: {exc}",
+        ) from exc
+    return briefing_run
