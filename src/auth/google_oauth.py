@@ -192,8 +192,10 @@ def deserialize_credentials(
             expiry_value.replace("Z", "+00:00")
         )
 
-        if expiry.tzinfo is None:
-            expiry = expiry.replace(tzinfo=timezone.utc)
+        # google-auth's Credentials.expired/.valid compare expiry against an
+        # offset-naive UTC "now" internally, so expiry must stay naive too.
+        if expiry.tzinfo is not None:
+            expiry = expiry.astimezone(timezone.utc).replace(tzinfo=None)
 
     return Credentials(
         token=stored_credentials.get("token"),
