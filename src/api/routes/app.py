@@ -55,3 +55,38 @@ def debug_run_briefing(client_id: str):
             detail=f"{type(exc).__name__}: {exc}",
         ) from exc
     return briefing_run
+
+
+# TEMP DEBUG: one-off cleanup of a test client's data from production.
+# Remove once used.
+@app.delete("/debug/delete-client/{client_id}")
+def debug_delete_client(client_id: str):
+    from src.repositories.client_repository import ClientRepository
+    from src.repositories.configuration_repository import ConfigurationRepository
+    from src.repositories.integration_repository import IntegrationRepository
+    from src.repositories.oauth_state_repository import OAuthStateRepository
+
+    client_repository = ClientRepository()
+    configuration_repository = ConfigurationRepository()
+    integration_repository = IntegrationRepository()
+    oauth_state_repository = OAuthStateRepository()
+
+    client = client_repository.get_client(client_id=client_id)
+    if client is None:
+        raise HTTPException(status_code=404, detail="No such client.")
+
+    deleted_states = oauth_state_repository.delete_states_for_client(
+        client_id=client_id
+    )
+    integration_repository.delete_google_calendar_connection(client_id=client_id)
+    integration_repository.delete_stripe_connection(client_id=client_id)
+    deleted_configuration = configuration_repository.delete_configuration(
+        client_id=client_id
+    )
+    client_repository.delete_client(client_id=client_id)
+
+    return {
+        "deleted_client": client_id,
+        "pending_oauth_states_removed": deleted_states,
+        "configuration_removed": deleted_configuration,
+    }
